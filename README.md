@@ -1,2 +1,2 @@
 # TalkIn
-![](TalkIn\image.png)
+Это проект крутых перцев
