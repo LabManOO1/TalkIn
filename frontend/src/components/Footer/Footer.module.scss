@@ -1,0 +1,62 @@
+@use "../../assets/styles/variables" as *;
+
+
+.footer {
+
+    width: 100%;
+
+    background-image: url("/footer-waves.svg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-color: $white-color;
+
+    aspect-ratio: 1920 / 100;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+
+    @media (max-width: 900px) {
+        aspect-ratio: auto;
+
+        min-height: 70px;
+
+        background-size: auto 100%;
+        background-position: center;
+    }
+
+    @media (max-width: 480px) {
+        min-height: 56px;
+    }
+
+}
+
+
+
+.content {
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+
+
+.copyright {
+
+    font-family: "Manrope", sans-serif;
+
+    font-size: 15px;
+    font-weight: 500;
+
+    color: $secondary-color;
+
+
+    @media (max-width: 480px) {
+        font-size: 12px;
+    }
+
+}

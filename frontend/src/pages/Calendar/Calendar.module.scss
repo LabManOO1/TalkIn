@@ -1,0 +1,101 @@
+@use "../../assets/styles/variables" as *;
+.page { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #fff; }
+.main { position: relative; flex: 1; min-height: 650px; padding: 24px clamp(20px, 8vw, 140px) 70px; background: #fff; }
+.datePicker { position: relative; z-index: 20; width: fit-content; }
+.dateButton { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: $secondary-color; font-family: "Manrope", sans-serif; font-size: 31px; font-weight: 800; }
+.dateButton svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.calendarContent { width: min(1080px, 100%); margin: 90px auto 0; display: grid; grid-template-columns: minmax(0, 1fr) 310px; align-items: start; gap: 42px; }
+.meetingsList { display: grid; gap: 18px; }
+.meetingCard { position: relative; min-height: 150px; padding: 25px 28px; border-radius: 24px; background: linear-gradient(110deg, #b50008, #690004); color: #fff; box-shadow: 0 18px 38px rgba(87, 0, 4, .16); }
+.meetingCard h2 { margin: 5px 0 0; font-family: "Manrope", sans-serif; font-size: 24px; overflow-wrap: anywhere; }
+.meetingCard small { color: rgba(255,255,255,.7); font-family: "Manrope", sans-serif; }
+.emptyCard { display: grid; place-items: center; background: linear-gradient(110deg, #4d0003, #260002); font-family: "Manrope", sans-serif; font-size: 19px; font-weight: 700; text-align: center; }
+.cancelledCard { filter: grayscale(.55); opacity: .72; }
+.cardTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.status { flex-shrink: 0; padding: 7px 11px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; font-family: "Manrope", sans-serif; font-size: 11px; font-weight: 800; }
+.meetingMeta { margin-top: 22px; display: flex; align-items: center; justify-content: space-between; gap: 15px; font-family: "Manrope", sans-serif; font-size: 13px; }
+.participantsMeta { min-width: 0; display: inline-flex; align-items: center; gap: 8px; }
+.participantsMeta svg { width: 29px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.cardActions { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
+.cardActions button { min-height: 38px; padding: 0 15px; border-radius: 12px; background: #fff; color: #760005; font-family: "Manrope", sans-serif; font-weight: 800; }
+.cardActions .cancelButton { border: 1px solid rgba(255,255,255,.45); background: transparent; color: #fff; }
+.scheduleButton { min-height: 150px; padding: 24px; border-radius: 24px; display: grid; place-content: center; justify-items: center; gap: 12px; background: linear-gradient(105deg, #b60008, #4d0003); color: #fff; font-family: "Manrope", sans-serif; font-size: 19px; font-weight: 800; text-align: center; box-shadow: 0 18px 38px rgba(87, 0, 4, .16); }
+.scheduleButton svg { width: 50px; height: 50px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.notice, .error { width: min(1080px, 100%); margin: 20px auto -58px; padding: 11px 15px; border-radius: 13px; font-family: "Manrope", sans-serif; font-size: 13px; }
+.notice { background: #eaf7ef; color: #226b3d; }
+.error { background: #fff0f0; color: #9b0006; }
+.calendarPopover { position: absolute; top: 52px; left: 0; width: 344px; padding: 18px; border: 1px solid rgba(72,0,3,.12); border-radius: 22px; background: #fff; box-shadow: 0 24px 60px rgba(40,0,2,.18); }
+.calendarHeader { display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; margin-bottom: 13px; }
+.calendarHeader strong { font-family: "Manrope", sans-serif; font-size: 17px; text-align: center; }
+.calendarHeader button { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: transparent; }
+.calendarHeader svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.chevronLeft { transform: rotate(90deg); } .chevronRight { transform: rotate(-90deg); }
+.weekdays, .calendarGrid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.weekdays span { padding: 5px 0; color: #888; font-family: "Manrope", sans-serif; font-size: 11px; font-weight: 700; text-align: center; }
+.calendarGrid { gap: 3px; }
+.dayButton { position: relative; aspect-ratio: 1; border-radius: 11px; display: grid; place-items: center; background: transparent; color: $secondary-color; font-family: "Manrope", sans-serif; font-size: 13px; font-weight: 700; }
+.dayButton:hover { background: #f2f2f2; } .outsideMonth { color: #b8b8b8; } .today { box-shadow: inset 0 0 0 1.5px #a10005; }
+.selectedDay { background: linear-gradient(135deg, #b50008, #650004); color: #fff; }
+.meetingDot { position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: #b50008; } .selectedDay .meetingDot { background: #fff; }
+.goTodayButton { width: 100%; min-height: 38px; margin-top: 12px; border-radius: 12px; background: #f1f1f1; color: #770005; font-family: "Manrope", sans-serif; font-size: 13px; font-weight: 750; }
+
+@media (max-width: 900px) {
+  .calendarContent { margin-top: 55px; grid-template-columns: 1fr; }
+  .scheduleButton { min-height: 110px; grid-template-columns: auto auto; display: flex; align-items: center; justify-content: center; }
+  .scheduleButton svg { width: 38px; height: 38px; }
+}
+@media (max-width: 600px) {
+  .main { min-height: 560px; padding: 16px 14px 45px; }
+  .dateButton { font-size: 25px; }
+  .calendarPopover { position: fixed; top: 84px; left: 12px; right: 12px; width: auto; }
+  .calendarContent { margin-top: 38px; gap: 20px; }
+  .meetingCard { padding: 21px 18px; border-radius: 20px; }
+  .cardTop, .meetingMeta { align-items: flex-start; flex-direction: column; }
+  .meetingMeta { gap: 9px; }
+  .status { position: absolute; top: 18px; right: 16px; max-width: 42%; overflow: hidden; text-overflow: ellipsis; }
+  .meetingCard h2 { padding-right: 90px; font-size: 21px; }
+  .notice, .error { margin-top: 14px; margin-bottom: -20px; }
+}
+
+.pendingInvitationCard {
+  background: linear-gradient(110deg, #7f3000, #4d1200);
+}
+
+.invitationNote {
+  margin: 16px 0 0;
+  padding: 11px 13px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 14px;
+  background: rgba(255,255,255,.09);
+  color: rgba(255,255,255,.88);
+  font-family: "Manrope", sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cardActions button:disabled {
+  opacity: .58;
+  cursor: wait;
+}
+
+.cardActions .acceptButton {
+  background: #fff;
+  color: #6d2100;
+}
+
+.cardActions .declineButton {
+  border: 1px solid rgba(255,255,255,.45);
+  background: transparent;
+  color: #fff;
+}
+
+.invitationDot {
+  width: 6px;
+  height: 6px;
+  background: #ff9d00;
+  box-shadow: 0 0 0 2px rgba(255,157,0,.18);
+}
+
+.selectedDay .invitationDot {
+  background: #ffd18a;
+}
