@@ -1,0 +1,583 @@
+@use "../../assets/styles/variables" as *;
+
+
+.header {
+
+    width: 100%;
+    height: 100px;
+
+    background-color: $white-color;
+
+    display: flex;
+    align-items: center;
+
+    position: relative;
+    z-index: 100;
+
+
+    @media (max-width: 1024px) {
+        height: 90px;
+    }
+
+    @media (max-width: 768px) {
+        height: 80px;
+    }
+
+    @media (max-width: 480px) {
+        height: 64px;
+    }
+
+}
+
+
+
+.container {
+
+    width: 100%;
+
+    margin: 0 auto;
+
+    padding: 0 100px;
+
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+
+    @media (max-width: 1200px) {
+        padding: 0 60px;
+    }
+
+    @media (max-width: 768px) {
+        padding: 0 32px;
+    }
+
+    @media (max-width: 480px) {
+        padding: 0 16px;
+    }
+
+}
+
+
+
+.logo {
+
+    font-family: "Manrope", sans-serif;
+
+    font-size: 24px;
+    font-weight: 700;
+
+    background: radial-gradient(circle, $black-color 0%, $primary-color 100%);
+
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+
+    white-space: nowrap;
+
+
+    @media (max-width: 480px) {
+        font-size: 20px;
+    }
+
+}
+
+
+
+.right {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 40px;
+
+
+    @media (max-width: 768px) {
+        gap: 16px;
+    }
+
+}
+
+
+
+.navigation {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 25px;
+
+
+
+    a {
+
+        font-family: "Manrope", sans-serif;
+
+        font-size: 16px;
+
+        font-weight: 600;
+
+        color: $black-color;
+
+
+        transition: color .3s;
+
+
+
+        &:hover {
+
+            color: $primary-color;
+
+        }
+
+    }
+
+
+    @media (max-width: 768px) {
+
+        position: absolute;
+
+        top: 100%;
+        left: 0;
+        right: 0;
+
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+
+        background-color: $white-color;
+
+        max-height: 0;
+        overflow: hidden;
+
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0);
+
+        transition: max-height .3s ease, box-shadow .3s ease;
+
+
+        a {
+
+            width: 100%;
+            padding: 16px 32px;
+
+            font-size: 18px;
+
+            border-bottom: 1px solid $light-gray;
+
+        }
+
+    }
+
+}
+
+
+
+.navigationOpen {
+
+    @media (max-width: 768px) {
+
+        max-height: 260px;
+
+        box-shadow: 0 8px 16px rgba(0, 0, 0, .08);
+
+    }
+
+}
+
+
+
+.profileButton {
+
+    width: 38px;
+    height: 38px;
+
+
+    padding: 0;
+
+    background: transparent;
+
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    flex-shrink: 0;
+
+
+
+    img {
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: contain;
+
+    }
+
+
+    @media (max-width: 480px) {
+        width: 32px;
+        height: 32px;
+    }
+
+}
+
+
+
+.burger {
+
+    display: none;
+
+    width: 26px;
+    height: 18px;
+
+    padding: 0;
+
+    background: transparent;
+
+    flex-direction: column;
+    justify-content: space-between;
+
+    flex-shrink: 0;
+
+
+    span {
+
+        display: block;
+
+        width: 100%;
+        height: 2px;
+
+        background-color: $black-color;
+
+        transition: transform .3s ease, opacity .3s ease;
+
+    }
+
+
+    @media (max-width: 768px) {
+        display: flex;
+    }
+
+}
+
+
+
+.burgerOpen {
+
+    span:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+    }
+
+    span:nth-child(2) {
+        opacity: 0;
+    }
+
+    span:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
+    }
+
+}
+
+.profileButton {
+    border-radius: 50%;
+    transition: transform .2s ease, box-shadow .2s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+        outline: 3px solid rgba(176, 0, 8, .24);
+        outline-offset: 3px;
+    }
+
+    > span {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #b60009 0%, #520004 100%);
+        color: $white-color;
+        font-family: "Manrope", sans-serif;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: .03em;
+        box-shadow: 0 6px 16px rgba(99, 0, 5, .22);
+    }
+}
+
+.profileButtonAuthenticated {
+    box-shadow: 0 0 0 2px rgba(176, 0, 8, .12);
+}
+
+.notifications {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.notificationButton {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #f5f5f5;
+    color: #4f0003;
+    transition: background .2s ease, transform .2s ease;
+
+    &:hover {
+        background: #ececec;
+        transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+        outline: 3px solid rgba(176, 0, 8, .24);
+        outline-offset: 3px;
+    }
+
+    svg {
+        width: 21px;
+        height: 21px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    @media (max-width: 480px) {
+        width: 34px;
+        height: 34px;
+    }
+}
+
+.notificationBadge {
+    position: absolute;
+    top: -5px;
+    right: -7px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: #b60009;
+    color: #fff;
+    font-family: "Manrope", sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.notificationsPanel {
+    position: absolute;
+    top: calc(100% + 14px);
+    right: -58px;
+    z-index: 500;
+    width: min(390px, calc(100vw - 24px));
+    max-height: min(620px, calc(100dvh - 110px));
+    padding: 18px;
+    border: 1px solid rgba(85, 0, 4, .12);
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #fff;
+    color: #181818;
+    box-shadow: 0 24px 70px rgba(54, 0, 3, .22);
+    font-family: "Manrope", sans-serif;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: -7px;
+        right: 75px;
+        width: 14px;
+        height: 14px;
+        border-top: 1px solid rgba(85, 0, 4, .12);
+        border-left: 1px solid rgba(85, 0, 4, .12);
+        background: #fff;
+        transform: rotate(45deg);
+    }
+}
+
+.notificationsHeader {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+
+    > div {
+        display: grid;
+        gap: 3px;
+    }
+
+    strong {
+        font-size: 18px;
+    }
+
+    small {
+        color: #777;
+        font-size: 11px;
+    }
+
+    > button {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f3f3f3;
+        color: #4d0003;
+        font-size: 24px;
+        line-height: 1;
+    }
+}
+
+.notificationList {
+    min-height: 80px;
+    overflow-y: auto;
+    display: grid;
+    gap: 10px;
+    overscroll-behavior: contain;
+}
+
+.notificationCard {
+    padding: 12px;
+    border: 1px solid rgba(173, 0, 7, .12);
+    border-radius: 17px;
+    display: grid;
+    gap: 10px;
+    background: #fafafa;
+}
+
+.cancelledNotification {
+    background: #f2f2f2;
+    filter: grayscale(.45);
+}
+
+.notificationMain {
+    min-width: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+
+    strong {
+        overflow-wrap: anywhere;
+        font-size: 14px;
+        line-height: 1.35;
+    }
+
+    small {
+        color: #707070;
+        font-size: 11px;
+        line-height: 1.4;
+    }
+}
+
+.notificationKicker {
+    color: #9f0007;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.notificationActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+
+    button {
+        min-height: 36px;
+        padding: 0 10px;
+        border-radius: 11px;
+        background: linear-gradient(100deg, #b60008, #620004);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    button:disabled {
+        opacity: .55;
+        cursor: wait;
+    }
+
+    .declineInvitation {
+        border: 1px solid rgba(120, 0, 5, .2);
+        background: #fff;
+        color: #770005;
+    }
+}
+
+.notificationError,
+.notificationEmpty {
+    margin: 0;
+    padding: 12px;
+    border-radius: 13px;
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: center;
+}
+
+.notificationError {
+    background: #fff0f0;
+    color: #970006;
+}
+
+.notificationEmpty {
+    background: #f5f5f5;
+    color: #777;
+}
+
+.openCalendarButton {
+    min-height: 42px;
+    border-radius: 13px;
+    background: #f0f0f0;
+    color: #720005;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+@media (max-width: 900px) {
+    .right {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 600px) {
+    .notificationsPanel {
+        position: fixed;
+        top: 72px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-height: calc(100dvh - 84px);
+        border-radius: 22px;
+
+        &::before {
+            display: none;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .right {
+        gap: 10px;
+    }
+
+    .notificationsPanel {
+        top: 66px;
+    }
+}

@@ -1,0 +1,184 @@
+@use "../../assets/styles/variables" as *;
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: $white-color;
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  padding: 48px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $white-color;
+}
+
+.card {
+  width: min(460px, 100%);
+  min-height: 240px;
+  padding: 20px 24px 22px;
+  border: 2px solid #a40000;
+  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f4f4f4;
+  color: $black-color;
+
+  > svg {
+    width: 56px;
+    height: 42px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  h1 {
+    margin: 7px 0 19px;
+    font-family: "Manrope", sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.17;
+    text-align: center;
+  }
+}
+
+.form {
+  width: 100%;
+  height: 64px;
+  padding-left: 18px;
+  border: 2px solid #a40000;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  overflow: hidden;
+
+  &:focus-within {
+    box-shadow: 0 0 0 3px rgba(164, 0, 0, 0.12);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $black-color;
+    font-family: "Manrope", sans-serif;
+    font-size: 18px;
+  }
+}
+
+.submitButton {
+  width: 67px;
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: $secondary-color;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  svg {
+    width: 34px;
+    height: 34px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(164, 0, 0, 0.08);
+    color: #a40000;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(164, 0, 0, 0.3);
+    outline-offset: -5px;
+    border-radius: 16px;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+}
+
+.loader {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(30, 30, 30, 0.25);
+  border-top-color: $secondary-color;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.error,
+.success {
+  width: 100%;
+  margin: 10px 0 -6px;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.error {
+  color: #a40000;
+}
+
+.success {
+  color: #2f6d35;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .main {
+    padding: 32px 18px;
+  }
+
+  .card {
+    min-height: 220px;
+    padding: 18px 18px 20px;
+    border-radius: 20px;
+
+    h1 {
+      font-size: 23px;
+      margin-bottom: 17px;
+    }
+  }
+
+  .form {
+    height: 58px;
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .card h1 {
+    font-size: 20px;
+  }
+
+  .form input {
+    font-size: 16px;
+  }
+
+  .submitButton {
+    width: 58px;
+  }
+}

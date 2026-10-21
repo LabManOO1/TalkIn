@@ -1,0 +1,81 @@
+* {
+    margin: 0;
+    padding: 0;
+
+    box-sizing: border-box;
+}
+
+
+
+html {
+
+    scroll-behavior: smooth;
+
+}
+
+
+
+body {
+
+    font-family: "Manrope", sans-serif;
+
+    background: #FFFFFF;
+
+    color: #000000;
+
+}
+
+
+
+a {
+
+    text-decoration: none;
+
+    color: inherit;
+
+}
+
+
+
+button {
+
+    border: none;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+}
+
+img {
+
+    max-width: 100%;
+
+    display: block;
+
+}
+
+.container {
+
+    width: 100%;
+
+    max-width: 1640px;
+
+    margin: 0 auto;
+
+    padding: 0 100px;
+
+
+    @media (max-width: 1200px) {
+        padding: 0 60px;
+    }
+
+    @media (max-width: 768px) {
+        padding: 0 32px;
+    }
+
+    @media (max-width: 480px) {
+        padding: 0 16px;
+    }
+
+}
