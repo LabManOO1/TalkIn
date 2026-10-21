@@ -1,0 +1,30 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+
+title Диаграмма компонентов контейнера Файловый сервис (TalkSphere)
+
+Container(web_app, "Веб-приложение", "React, Vite", "Загрузка и скачивание файлов.")
+Container(api, "Backend API", "Python, FastAPI", "Сигнал закрытия папки встречи.")
+
+Container_Boundary(files, "Файловый сервис") {
+    Component(files_controller, "Files Controller", "FastAPI Router", "HTTPS-эндпоинты загрузки, скачивания и служебного закрытия папки.")
+    Component(access_guard, "Access Guard", "Python", "Проверка токена/идентификатора встречи и статуса папки (открыта/закрыта).")
+    Component(folder_manager, "Folder Manager", "Python", "Жизненный цикл каталога встречи: создание, лимиты, закрытие после окончания.")
+    Component(disk_storage, "Disk Storage Adapter", "Python, filesystem", "Чтение и запись файлов в локальный каталог сервера.")
+}
+
+Rel(web_app, files_controller, "Загрузка и скачивание файлов встречи", "HTTPS")
+Rel(api, files_controller, "Закрытие папки после окончания встречи", "HTTPS")
+Rel(files_controller, access_guard, "Проверка доступа к папке встречи", "Python Call")
+Rel(files_controller, folder_manager, "Операции с каталогом встречи", "Python Call")
+Rel(access_guard, folder_manager, "Запрос статуса папки", "Python Call")
+Rel(folder_manager, disk_storage, "Создание каталога, запись и чтение файлов", "Python Call")
+
+Lay_R(web_app, api)
+Lay_D(web_app, files_controller)
+Lay_D(folder_manager, disk_storage)
+@enduml

@@ -1,0 +1,54 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+skinparam defaultFontName Arial
+skinparam dpi 130
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+
+title Диаграмма контейнеров программной системы TalkSphere
+
+Person(participant, "Участник встречи", "Подключается к конференции, смотрит календарь и пишет в чат.")
+Person(organizer, "Организатор встречи", "Создаёт встречу, приглашает участников и управляет устройствами.")
+Person(moderator, "Модератор", "Участник с особыми правами, которые выдаёт организатор.")
+
+System_Ext(ai, "Сервис ИИ", "Формирует отчёт по итогам встречи.")
+System_Ext(mail, "Почтовый сервис", "Доставка писем-приглашений.")
+System_Ext(calendar, "Google Календарь", "События встреч пользователя.")
+
+System_Boundary(ts, "TalkSphere") {
+    Container(web_app, "Веб-приложение", "React, Vite, SCSS Modules", "Создание встречи, календарь, конференция, чат, общая доска и файлы в браузере.")
+    Container(files, "Файловый сервис", "Python, FastAPI, локальный диск", "Файлы одной встречи. После окончания папка закрывается.")
+    Container(board, "Доска с общим доступом", "Python, FastAPI, WebSocket", "Микросервис общей доски: фигуры и курсоры участников встречи.")
+    Container(api, "Backend API", "Python, FastAPI, SQLAlchemy, WebSocket", "Регистрация, JWT, комнаты, календарь, приглашения, сигналинг WebRTC и чат.")
+    ContainerDb(database, "База данных", "PostgreSQL", "Пользователи, встречи, приглашения, история чата и состояние доски.")
+}
+
+Rel(participant, web_app, "Календарь, ответ на приглашение, вход в конференцию", "HTTPS")
+Rel(organizer, web_app, "Параметры встречи, приглашения, назначение модератора, команды управления устройствами", "HTTPS")
+Rel(moderator, web_app, "Команды в рамках выданных прав", "HTTPS")
+
+Rel(web_app, api, "Профиль, комната, календарь, ответ на приглашение", "HTTPS/JSON")
+Rel(web_app, api, "SDP/ICE видеосвязи и текст сообщений чата", "WSS")
+Rel(web_app, board, "Изменения общей доски: фигуры и курсоры", "WSS")
+Rel_D(web_app, files, "Загрузка и скачивание файлов встречи", "HTTPS")
+Rel_L(api, files, "Закрытие папки после окончания встречи", "HTTPS")
+
+Rel(api, database, "Пользователи, встречи, приглашения и история чата", "SQL/TCP 5432")
+Rel(board, database, "Состояние общей доски", "SQL/TCP 5432")
+Rel(api, mail, "Письмо-приглашение на встречу", "SMTP/TLS 587")
+Rel(api, calendar, "Название, время и ссылка встречи", "HTTPS/JSON")
+Rel(api, ai, "Итоги встречи: чат, участники, длительность", "HTTPS/JSON")
+Rel(ai, api, "Текст отчёта по встрече", "HTTPS/JSON")
+
+Lay_R(participant, organizer)
+Lay_R(organizer, moderator)
+Lay_D(web_app, board)
+Lay_D(board, files)
+Lay_R(board, api)
+Lay_R(files, database)
+Lay_D(database, ai)
+Lay_R(database, mail)
+Lay_R(mail, calendar)
+@enduml

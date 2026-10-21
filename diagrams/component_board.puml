@@ -1,0 +1,34 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+
+title Диаграмма компонентов контейнера Доска с общим доступом (TalkSphere)
+
+Container(web_app, "Веб-приложение", "React, Vite", "Клиент общей доски.")
+Container(api, "Backend API", "Python, FastAPI", "Проверка JWT и членства во встрече.")
+
+Container_Boundary(board, "Доска с общим доступом") {
+    Component(board_controller, "Board Controller", "FastAPI, WebSocket", "Принимает WSS-соединения и маршрутизирует события доски.")
+    Component(session_manager, "Session Manager", "Python", "Присоединение к комнате доски, список онлайн-участников и права записи.")
+    Component(canvas_engine, "Canvas Engine", "Python", "Применение операций: фигуры, перемещение, курсоры, конфликтные правки.")
+    Component(board_repository, "Board Repository", "SQLAlchemy", "Персистентное состояние холста и снимок доски встречи.")
+}
+
+ContainerDb(database, "База данных", "PostgreSQL", "Состояние общей доски.")
+
+Rel(web_app, board_controller, "Изменения общей доски: фигуры и курсоры", "WSS")
+Rel(board_controller, session_manager, "Регистрация участника в сессии доски", "Python Call")
+Rel(board_controller, canvas_engine, "Передача операции редактирования", "Python Call")
+Rel(session_manager, api, "Проверка JWT и участия во встрече", "HTTPS/JSON")
+Rel(session_manager, canvas_engine, "Проверка права участника на изменение", "Python Call")
+Rel(canvas_engine, board_repository, "Сохранение состояния доски", "Python Call")
+Rel(session_manager, board_repository, "Чтение снимка доски при входе", "Python Call")
+Rel(board_repository, database, "Состояние общей доски", "SQL/TCP 5432")
+
+Lay_R(web_app, api)
+Lay_D(web_app, board_controller)
+Lay_D(board_repository, database)
+@enduml

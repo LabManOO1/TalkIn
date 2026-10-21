@@ -1,0 +1,113 @@
+@startuml
+skinparam defaultFontName Arial
+skinparam dpi 130
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide circle
+
+title Диаграмма классов контейнера Веб-приложение (TalkSphere)
+
+package "ui_shell" {
+  class App <<React>> {
+    +routes: Route[]
+  }
+  class RequireAuth <<React>> {
+    +children: ReactNode
+    +render(): ReactNode
+  }
+}
+
+package "auth_ui" {
+  class AuthProvider <<React>> {
+    +user: UserProfile
+    +loading: bool
+    +isAuthenticated: bool
+    +login(username: str, password: str): Promise
+    +register(dto: RegisterDto): Promise
+    +logout(): void
+    +updateProfile(dto): Promise
+  }
+  class LoginPage <<React>>
+  class RegisterPage <<React>>
+  class ProfilePage <<React>>
+  class UserProfile {
+    +id: str
+    +username: str
+    +email: str
+  }
+}
+
+package "meeting_ui" {
+  class MeetingsPage <<React>>
+  class JoinMeetingPage <<React>>
+  class CalendarPage <<React>>
+  class ScheduleMeetingPage <<React>>
+}
+
+package "conference_ui" {
+  class ConferencePage <<React>> {
+    +inviteCode: str
+    +joinRoom(): Promise
+    +toggleMic(): void
+    +toggleCamera(): void
+    +shareScreen(): void
+  }
+  class VideoTile <<React>> {
+    +stream: MediaStream
+    +muted: bool
+  }
+  interface ScreenSharePolicy <<Strategy>> {
+    +canShare(userId: str, creatorId: str): bool
+  }
+  class EveryonePolicy
+  class CreatorOnlyPolicy
+}
+
+package "chat_ui" {
+  class ChatPanel <<React>> {
+    +messages: ChatMessage[]
+    +send(text: str): void
+  }
+  class ChatMessage {
+    +id: str
+    +content: str
+    +sentAt: str
+  }
+}
+
+package "api_client" {
+  class ApiClient {
+    +baseURL: str
+    +get(url: str): Promise
+    +post(url: str, body): Promise
+    +attachToken(): void
+  }
+}
+
+App *-- RequireAuth
+App --> AuthProvider
+RequireAuth --> AuthProvider : isAuthenticated
+AuthProvider --> UserProfile
+AuthProvider --> ApiClient
+LoginPage --> AuthProvider
+RegisterPage --> AuthProvider
+ProfilePage --> AuthProvider
+
+MeetingsPage --> ApiClient
+JoinMeetingPage --> ApiClient
+CalendarPage --> ApiClient
+ScheduleMeetingPage --> ApiClient
+App --> MeetingsPage
+App --> CalendarPage
+App --> ScheduleMeetingPage
+App --> ConferencePage
+
+ConferencePage *-- "0..*" VideoTile
+ConferencePage *-- ChatPanel
+ConferencePage --> ApiClient
+ConferencePage --> ScreenSharePolicy
+ScreenSharePolicy <|.. EveryonePolicy
+ScreenSharePolicy <|.. CreatorOnlyPolicy
+ChatPanel --> ApiClient : WSS
+ChatPanel *-- "0..*" ChatMessage
+@enduml

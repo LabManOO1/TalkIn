@@ -1,0 +1,88 @@
+@startuml
+skinparam defaultFontName Arial
+skinparam dpi 130
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide circle
+
+title Диаграмма классов контейнера Доска с общим доступом (TalkSphere)
+
+package "board_controller" {
+  class BoardController {
+    +accept(websocket: WebSocket, invite_code: str, token: str): void
+    +route(websocket: WebSocket, session_id: UUID, raw: str): void
+  }
+  class BoardEvent {
+    +type: str
+    +room_id: UUID
+    +user_id: UUID
+    +payload: dict
+  }
+}
+
+package "session_manager" {
+  class SessionManager {
+    +join(invite_code: str, token: str): tuple
+    +leave(session_id: UUID): BoardSession
+    +can_edit(session: BoardSession): bool
+  }
+  class BoardSession {
+    +id: UUID
+    +room_id: UUID
+    +user_id: UUID
+    +can_write: bool
+    +invite_code: str
+  }
+  class AccessClient {
+    +verify(token: str, invite_code: str): tuple
+  }
+  class UserContext {
+    +user_id: UUID
+    +is_member: bool
+    +username: str
+    +role: str
+  }
+}
+
+package "canvas_engine" {
+  interface BoardOperation <<Strategy>> {
+    +apply(snapshot: BoardSnapshot, event: BoardEvent): BoardSnapshot
+  }
+  class ShapeOperation
+  class MoveOperation
+  class CursorOperation
+  class CanvasEngine {
+    -strategy: BoardOperation
+    +set_strategy(strategy: BoardOperation): void
+    +handle(snapshot: BoardSnapshot, event: BoardEvent): ApplyResult
+  }
+}
+
+package "board_repository" {
+  class BoardRepository {
+    +load_snapshot(room_id: UUID, invite_code: str): BoardSnapshot
+    +save_snapshot(snapshot: BoardSnapshot, invite_code: str): void
+  }
+  class BoardSnapshot {
+    +room_id: UUID
+    +shapes: list
+    +revision: int
+    +cursors: dict
+  }
+}
+
+BoardController --> SessionManager
+BoardController --> CanvasEngine
+BoardController --> BoardEvent
+SessionManager --> AccessClient : HTTPS/JSON
+AccessClient --> UserContext
+SessionManager --> BoardSession
+SessionManager --> BoardRepository : снимок при входе
+CanvasEngine --> BoardOperation
+BoardOperation <|.. ShapeOperation
+BoardOperation <|.. MoveOperation
+BoardOperation <|.. CursorOperation
+CanvasEngine --> BoardRepository
+BoardRepository --> BoardSnapshot
+CanvasEngine --> SessionManager : can_edit
+@enduml

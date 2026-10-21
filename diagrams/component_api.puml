@@ -1,0 +1,54 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+
+title Диаграмма компонентов контейнера Backend API (TalkSphere)
+
+Container(web_app, "Веб-приложение", "React, Vite", "Клиент платформы.")
+Container(board, "Доска с общим доступом", "Python, FastAPI, WebSocket", "Проверка доступа участника к доске встречи.")
+
+Container_Boundary(api, "Backend API") {
+    Component(api_controller, "API Controller", "FastAPI Router", "Принимает HTTPS и WSS, маршрутизирует запросы к модулям.")
+    Component(auth_comp, "Auth Module", "Python, JWT", "Регистрация, вход, проверка токена и профиль пользователя.")
+    Component(meeting_comp, "Meeting Module", "Python", "Комнаты, приглашения, календарь встреч, назначение модератора и права.")
+    Component(realtime_comp, "Realtime Module", "Python, WebSocket", "Сигналинг WebRTC (SDP/ICE) и текстовый чат встречи.")
+    Component(integration_comp, "Integration Module", "Python", "Исходящие интеграции: почта, Google Календарь, сервис ИИ.")
+    Component(api_repository, "API Repository", "SQLAlchemy", "Слой доступа к данным: пользователи, встречи, приглашения, история чата.")
+}
+
+Container(files, "Файловый сервис", "Python, FastAPI", "Файлы встречи.")
+ContainerDb(database, "База данных", "PostgreSQL", "Пользователи, встречи, чат.")
+System_Ext(mail, "Почтовый сервис", "Доставка писем-приглашений.")
+System_Ext(calendar, "Google Календарь", "События встреч.")
+System_Ext(ai, "Сервис ИИ", "Отчёт по итогам встречи.")
+
+Rel(web_app, api_controller, "Профиль, комната, календарь, ответ на приглашение", "HTTPS/JSON")
+Rel(web_app, api_controller, "SDP/ICE и сообщения чата", "WSS")
+Rel(board, api_controller, "Проверка JWT и участия во встрече", "HTTPS/JSON")
+Rel(api_controller, auth_comp, "Проверка JWT и операции профиля", "Python Call")
+Rel(api_controller, meeting_comp, "Создание комнаты, приглашения, модератор", "Python Call")
+Rel(api_controller, realtime_comp, "Маршрутизация сигналинга и чата", "Python Call")
+Rel(meeting_comp, auth_comp, "Идентификация организатора и прав доступа", "Python Call")
+Rel(realtime_comp, auth_comp, "Проверка участника комнаты по JWT", "Python Call")
+Rel(meeting_comp, integration_comp, "Приглашение, календарь и запрос отчёта", "Python Call")
+Rel(meeting_comp, api_repository, "Чтение и запись встреч и приглашений", "Python Call")
+Rel(auth_comp, api_repository, "Чтение и запись пользователей", "Python Call")
+Rel(realtime_comp, api_repository, "Сохранение истории чата", "Python Call")
+Rel(meeting_comp, files, "Закрытие папки после окончания встречи", "HTTPS")
+Rel(api_repository, database, "Пользователи, встречи, приглашения и история чата", "SQL/TCP 5432")
+Rel(integration_comp, mail, "Письмо-приглашение на встречу", "SMTP/TLS 587")
+Rel(integration_comp, calendar, "Название, время и ссылка встречи", "HTTPS/JSON")
+Rel(integration_comp, ai, "Итоги встречи: чат, участники, длительность", "HTTPS/JSON")
+Rel(ai, integration_comp, "Текст отчёта по встрече", "HTTPS/JSON")
+
+Lay_R(web_app, board)
+Lay_D(web_app, api_controller)
+Lay_D(api_repository, database)
+Lay_R(meeting_comp, files)
+Lay_R(database, mail)
+Lay_R(mail, calendar)
+Lay_R(calendar, ai)
+@enduml

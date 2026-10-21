@@ -1,0 +1,149 @@
+@startuml
+skinparam defaultFontName Arial
+skinparam dpi 130
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide circle
+
+title Диаграмма классов контейнера Backend API (TalkSphere)
+
+package "auth_comp" {
+  class AuthService {
+    +verify_password(password: str, hashed: str): bool
+    +create_access_token(data: dict): str
+    +get_current_user(token: str, db: Session): User
+    +get_current_user_ws(token: str): User
+  }
+  class User {
+    +id: UUID
+    +username: str
+    +email: str
+    +password_hash: str
+  }
+  class RegisterRequest {
+    +username: str
+    +email: str
+    +password: str
+  }
+  class TokenResponse {
+    +access_token: str
+    +token_type: str
+    +user: UserResponse
+  }
+}
+
+package "meeting_comp" {
+  interface ScreenSharePolicy <<Strategy>> {
+    +can_share(actor_id: UUID, room: Room): bool
+  }
+  class EveryoneScreenSharePolicy
+  class CreatorOnlyScreenSharePolicy
+  class ScreenSharePolicyFactory {
+    +from_code(policy: str): ScreenSharePolicy
+  }
+  class Room {
+    +id: UUID
+    +title: str
+    +invite_code: str
+    +created_by: UUID
+    +status: RoomStatus
+    +screen_share_policy: str
+  }
+  class RoomParticipant {
+    +room_id: UUID
+    +user_id: UUID
+    +role: ParticipantRole
+    +is_muted: bool
+    +is_video_off: bool
+    +is_screen_sharing: bool
+  }
+  class ParticipantService {
+    +add_participant(db: Session, room_id: UUID, user_id: UUID): RoomParticipant
+    +remove_participant(db: Session, room_id: UUID, user_id: UUID): bool
+    +update_status(...): RoomParticipant
+  }
+  class ScheduledConference {
+    +id: UUID
+    +title: str
+    +scheduled_start: datetime
+    +status: ConferenceStatus
+    +screen_share_policy: str
+  }
+  class ScheduledParticipant {
+    +status: str
+    +is_read: bool
+    +invited_at: datetime
+  }
+  enum RoomStatus {
+    active
+    ended
+    archived
+  }
+  enum ParticipantRole {
+    speaker
+    moderator
+    viewer
+  }
+  enum ConferenceStatus {
+    scheduled
+    active
+    ended
+    cancelled
+  }
+}
+
+package "realtime_comp" {
+  class ChatService {
+    +save_message(db: Session, room_id: UUID, user_id: UUID, content: str): ChatMessage
+    +get_messages_with_users(db: Session, room_id: UUID): list
+    +delete_message(db: Session, message_id: UUID, user_id: UUID): bool
+  }
+  class ChatMessage {
+    +room_id: UUID
+    +user_id: UUID
+    +content: str
+    +is_deleted: bool
+  }
+  class SignalingHub {
+    +send_payload(client: dict, payload: dict): bool
+    +broadcast(invite_code: str, payload: dict): void
+    +remove_connection(invite_code: str, websocket): list
+  }
+}
+
+package "api_repository" {
+  class Session {
+    +query(model): Query
+    +add(entity): void
+    +commit(): void
+  }
+}
+
+AuthService --> User : читает
+AuthService ..> RegisterRequest
+AuthService ..> TokenResponse
+
+ScreenSharePolicy <|.. EveryoneScreenSharePolicy
+ScreenSharePolicy <|.. CreatorOnlyScreenSharePolicy
+ScreenSharePolicyFactory --> ScreenSharePolicy : создаёт
+Room --> ScreenSharePolicyFactory : policy code
+Room --> User : created_by
+Room "1" *-- "0..*" RoomParticipant
+RoomParticipant --> User
+Room --> RoomStatus
+RoomParticipant --> ParticipantRole
+ParticipantService --> RoomParticipant
+ParticipantService --> Session
+ScheduledConference --> Room
+ScheduledConference --> User : created_by
+ScheduledConference "1" *-- "0..*" ScheduledParticipant
+ScheduledParticipant --> User
+ScheduledConference --> ConferenceStatus
+
+ChatService --> ChatMessage
+ChatService --> Session
+ChatMessage --> Room
+ChatMessage --> User
+SignalingHub --> AuthService : get_current_user_ws
+SignalingHub --> ParticipantService
+@enduml

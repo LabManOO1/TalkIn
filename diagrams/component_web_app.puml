@@ -1,0 +1,49 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+
+title Диаграмма компонентов контейнера Веб-приложение (TalkSphere)
+
+Person(participant, "Участник встречи", "Календарь, конференция, чат.")
+Person(organizer, "Организатор встречи", "Создание встречи и управление.")
+Person(moderator, "Модератор", "Команды в рамках выданных прав.")
+
+Container_Boundary(web_app, "Веб-приложение") {
+    Component(ui_shell, "UI Shell", "React Router, SCSS Modules", "Маршруты страниц и общая оболочка интерфейса.")
+    Component(auth_ui, "Auth UI Module", "React", "Формы входа/регистрации и хранение JWT в клиенте.")
+    Component(meeting_ui, "Meeting UI Module", "React", "Создание встречи, календарь, приглашения и назначение модератора.")
+    Component(conference_ui, "Conference UI Module", "React, WebRTC", "Комната конференции, устройства и медиапотоки.")
+    Component(chat_ui, "Chat UI Module", "React", "Отображение и отправка сообщений чата.")
+    Component(api_client, "API Client", "Axios, WebSocket", "Единый клиент HTTPS/WSS к Backend API, доске и файлам.")
+}
+
+Container(api, "Backend API", "Python, FastAPI", "Профиль, комнаты, сигналинг, чат.")
+Container(board, "Доска с общим доступом", "Python, FastAPI, WebSocket", "Фигуры и курсоры.")
+Container(files, "Файловый сервис", "Python, FastAPI", "Файлы встречи.")
+
+Rel(participant, ui_shell, "Календарь, ответ на приглашение, вход в конференцию", "HTTPS")
+Rel(organizer, ui_shell, "Параметры встречи, приглашения, команды устройств", "HTTPS")
+Rel(moderator, ui_shell, "Команды в рамках выданных прав", "HTTPS")
+Rel(ui_shell, auth_ui, "Открытие экранов входа и профиля", "JavaScript Call")
+Rel(ui_shell, meeting_ui, "Открытие календаря и карточки встречи", "JavaScript Call")
+Rel(ui_shell, conference_ui, "Переход в комнату конференции", "JavaScript Call")
+Rel(ui_shell, chat_ui, "Открытие панели чата", "JavaScript Call")
+Rel(auth_ui, api_client, "Логин, регистрация, обновление профиля", "JavaScript Call")
+Rel(meeting_ui, api_client, "CRUD встреч, приглашения, модератор", "JavaScript Call")
+Rel(conference_ui, api_client, "SDP/ICE, устройства, доска и файлы", "JavaScript Call")
+Rel(chat_ui, api_client, "Текст сообщений чата", "JavaScript Call")
+Rel(api_client, api, "Профиль, комната, календарь, ответ на приглашение", "HTTPS/JSON")
+Rel(api_client, api, "SDP/ICE видеосвязи и текст сообщений чата", "WSS")
+Rel(api_client, board, "Изменения общей доски: фигуры и курсоры", "WSS")
+Rel(api_client, files, "Загрузка и скачивание файлов встречи", "HTTPS")
+
+Lay_R(participant, organizer)
+Lay_R(organizer, moderator)
+Lay_D(ui_shell, api_client)
+Lay_D(api_client, api)
+Lay_R(api, board)
+Lay_R(board, files)
+@enduml
