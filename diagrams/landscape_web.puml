@@ -1,0 +1,26 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Ландшафт L0: модуль веб-приложения TalkSphere
+
+Person(organizer, "Организатор встречи", "Открывает календарь и карточку встречи в браузере.")
+Person(participant, "Участник встречи", "Входит через SSO и открывает комнату.")
+
+Enterprise_Boundary(corp, "Корпоративная ИТ-инфраструктура организации") {
+    System(talksphere, "TalkSphere", "Веб-клиент — точка входа сотрудника в экосистему встреч.")
+    System(iam, "Корпоративный IAM", "Keycloak. SSO для браузера.")
+    System(crm, "Корпоративная CRM", "Контакты для формы приглашения.")
+}
+
+System_Ext(payment, "Внешняя финансовая система", "Окно подтверждения оплаты бронирования в браузере.")
+
+Rel(organizer, talksphere, "Создание встречи и приглашения", "HTTPS")
+Rel(participant, talksphere, "Вход и подключение к комнате", "HTTPS, WSS")
+Rel(talksphere, iam, "Authorization Code + PKCE", "HTTPS / OAuth2")
+Rel(iam, talksphere, "Access token сотрудника", "HTTPS / OAuth2")
+Rel(talksphere, crm, "Подсказка контактов для приглашения", "gRPC")
+Rel(talksphere, payment, "Редирект на оплату бронирования", "HTTPS / JSON")
+@enduml

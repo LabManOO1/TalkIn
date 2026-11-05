@@ -1,0 +1,27 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Runtime Backend API — create_meeting и завершение комнаты
+
+Container(web_app, "Веб-приложение", "React", "Вызов REST.")
+Container(api, "Backend API", "FastAPI", "AuthService, Meeting Module, Integration Module.")
+System_Ext(iam, "Корпоративный IAM", "OAuth2 introspect")
+System_Ext(payment, "Внешняя финансовая система", "Оплата бронирования")
+System_Ext(crm, "Корпоративная CRM", "Карточка встречи")
+System_Ext(mail, "Почтовый сервис", "SMTP")
+Container(files, "Файловый сервис", "FastAPI", "close_folder")
+ContainerDb(database, "База данных", "PostgreSQL", "rooms")
+
+Rel(web_app, api, "1. create_meeting(owner, params)", "HTTPS/JSON")
+Rel(api, iam, "2. get_current_user(token)", "HTTPS / OAuth2")
+Rel(api, payment, "3. create_payment_intent(meeting_id)", "HTTPS/JSON")
+Rel(api, database, "4. INSERT Room, ScheduledConference", "SQL/TCP 5432")
+Rel(api, crm, "5. sync_meeting(meeting_id)", "gRPC")
+Rel(api, mail, "6. Письмо-приглашение", "SMTP/TLS 587")
+Rel(web_app, api, "7. end_meeting(invite_code)", "HTTPS/JSON")
+Rel(api, files, "8. close_folder(invite_code)", "HTTPS")
+Rel(api, database, "9. UPDATE rooms.status = ended", "SQL/TCP 5432")
+@enduml

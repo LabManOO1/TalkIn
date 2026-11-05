@@ -1,0 +1,31 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Локальный сегмент развертывания: файловый сервис
+
+Deployment_Node(client, "Рабочая станция", "Браузер") {
+    Container(browser, "Веб-приложение", "React", "upload / download.")
+}
+
+Deployment_Node(cloud, "Yandex Cloud VPC", "ЦОД") {
+    Deployment_Node(edge, "Шлюз периметра", "Ubuntu VM") {
+        Container(nginx, "Reverse Proxy", "Nginx", "HTTPS TLS, порт 443, лимит тела запроса.")
+    }
+    Deployment_Node(apps, "Docker Host", "Ubuntu") {
+        Container(filesvc, "Файловый сервис", "Docker, FastAPI :8002", "Том /storage.")
+        Container(api, "Backend API", "Docker :8000", "verify + close_folder.")
+    }
+    Deployment_Node(disk, "Блок-хранилище", "Yandex Disk / volume") {
+        Container(storage, "Каталоги встреч", "filesystem", "Файлы одной встречи.")
+    }
+}
+
+Rel(browser, nginx, "POST/GET /files/{code}", "HTTPS TLS, порт 443")
+Rel(nginx, filesvc, "Прокси файлов", "HTTP, порт 8002")
+Rel(filesvc, api, "AccessClient.verify", "HTTP, порт 8000")
+Rel(api, filesvc, "close_folder после end_meeting", "HTTP, порт 8002")
+Rel(filesvc, storage, "write / read", "локальный том Docker")
+@enduml

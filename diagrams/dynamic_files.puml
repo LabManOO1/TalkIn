@@ -1,0 +1,22 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Runtime файлового сервиса — upload и close_folder
+
+Container(web_app, "Веб-приложение", "React", "Загрузка файла.")
+Container(files, "Файловый сервис", "FastAPI", "FilesController, AccessGuard, FolderManager.")
+Container(api, "Backend API", "FastAPI", "Проверка JWT и членства.")
+ContainerDb(meta, "files.db", "SQLite", "meeting_folders, meeting_files")
+
+Rel(web_app, files, "1. POST /files/{invite_code} + Bearer", "HTTPS")
+Rel(files, api, "2. AccessClient.verify(token, invite_code)", "HTTPS/JSON")
+Rel(api, files, "3. UserContext, meeting_id, status=active", "HTTPS/JSON")
+Rel(files, meta, "4. ensure_folder + add_file", "SQL")
+Rel(files, web_app, "5. FileMeta {id, name, size}", "HTTPS/JSON")
+Rel(api, files, "6. POST /files/{invite_code}/close", "HTTPS")
+Rel(files, meta, "7. FolderManager.close_folder status=closed", "SQL")
+Rel(files, api, "8. {status: closed}", "HTTPS/JSON")
+@enduml
