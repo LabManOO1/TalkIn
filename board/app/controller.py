@@ -1,28 +1,17 @@
-import asyncio
 import json
 from uuid import UUID
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from .access_client import AccessDenied
-from .canvas_engine import CanvasEngine
+from .auth import AccessDenied
 from .domain import BoardEvent
-from .repository import BoardRepository
 from .session_manager import SessionManager
 
 
 class BoardController:
-    def __init__(
-        self,
-        sessions: SessionManager,
-        engine: CanvasEngine,
-        repository: BoardRepository,
-    ) -> None:
+    def __init__(self, sessions: SessionManager) -> None:
         self.sessions = sessions
-        self.engine = engine
-        self.repository = repository
         self._sockets: dict[UUID, set[WebSocket]] = {}
-        self._locks: dict[UUID, asyncio.Lock] = {}
 
     async def accept(self, websocket: WebSocket, invite_code: str, token: str) -> None:
         await websocket.accept()
@@ -46,6 +35,7 @@ class BoardController:
                 "user_id": str(session.user_id),
                 "username": session.username,
                 "can_write": session.can_write,
+                "online": self.sessions.online(session.room_id),
                 "snapshot": snapshot.to_public(),
             }
         )
@@ -73,37 +63,36 @@ class BoardController:
         if not isinstance(payload, dict):
             await websocket.send_json({"type": "error", "detail": "payload должен быть объектом"})
             return
-        base_revision = message.get("base_revision")
+        try:
+            base_revision = message.get("base_revision")
+            revision = int(base_revision) if base_revision is not None else None
+        except (TypeError, ValueError):
+            await websocket.send_json({"type": "error", "detail": "Некорректная ревизия"})
+            return
         event = BoardEvent(
             type=event_type,
             room_id=session.room_id,
             user_id=session.user_id,
             payload=payload,
-            base_revision=int(base_revision) if base_revision is not None else None,
+            base_revision=revision,
         )
-        if event.type != "cursor" and not self.sessions.can_edit(session):
-            await websocket.send_json({"type": "error", "detail": "Нет права изменять доску"})
+        try:
+            result = self.sessions.submit(session, event)
+        except AccessDenied as exc:
+            await websocket.send_json({"type": "error", "detail": exc.detail})
             return
-
-        lock = self._locks.setdefault(session.room_id, asyncio.Lock())
-        async with lock:
-            snapshot = self.repository.load_snapshot(session.room_id, session.invite_code)
-            try:
-                result = self.engine.handle(snapshot, event)
-            except ValueError as exc:
-                await websocket.send_json({"type": "error", "detail": str(exc)})
-                return
-            if result.conflict:
-                await websocket.send_json(
-                    {
-                        "type": "conflict",
-                        "detail": "Доска уже изменена",
-                        "snapshot": result.snapshot.to_public(),
-                    }
-                )
-                return
-            if event.type != "cursor":
-                self.repository.save_snapshot(result.snapshot, session.invite_code)
+        except ValueError as exc:
+            await websocket.send_json({"type": "error", "detail": str(exc)})
+            return
+        if result.conflict:
+            await websocket.send_json(
+                {
+                    "type": "conflict",
+                    "detail": "Доска уже изменена",
+                    "snapshot": result.snapshot.to_public(),
+                }
+            )
+            return
 
         await self._broadcast(
             session.room_id,
@@ -129,8 +118,7 @@ class BoardController:
             user_id=session.user_id,
             payload={"remove": True},
         )
-        snapshot = self.repository.load_snapshot(session.room_id, session.invite_code)
-        result = self.engine.handle(snapshot, event)
+        result = self.sessions.submit(session, event)
         await self._broadcast(
             session.room_id,
             {
