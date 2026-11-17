@@ -11,8 +11,8 @@ class AccessDenied(Exception):
         self.detail = detail
 
 
-class AccessClient:
-    """Проверяет JWT и участие во встрече через Backend API."""
+class Auth:
+    """Проверка JWT и участия во встрече через Backend API."""
 
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url.rstrip("/")
@@ -20,18 +20,25 @@ class AccessClient:
     async def verify(self, token: str, invite_code: str) -> tuple[UserContext, UUID]:
         headers = {"Authorization": f"Bearer {token}"}
         code = invite_code.strip().upper()
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            me_response = await client.get(f"{self.base_url}/auth/me", headers=headers)
-            if me_response.status_code == 401:
-                raise AccessDenied("Неверный или просроченный токен")
-            me_response.raise_for_status()
-            me = me_response.json()
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                me_response = await client.get(f"{self.base_url}/auth/me", headers=headers)
+                if me_response.status_code == 401:
+                    raise AccessDenied("Неверный или просроченный токен")
+                me_response.raise_for_status()
+                me = me_response.json()
 
-            room_response = await client.get(f"{self.base_url}/rooms/{code}")
-            if room_response.status_code == 404:
-                raise AccessDenied("Комната не найдена")
-            room_response.raise_for_status()
-            room = room_response.json()
+                room_response = await client.get(f"{self.base_url}/rooms/{code}", headers=headers)
+                if room_response.status_code == 404:
+                    raise AccessDenied("Комната не найдена")
+                if room_response.status_code == 401:
+                    raise AccessDenied("Неверный или просроченный токен")
+                room_response.raise_for_status()
+                room = room_response.json()
+        except AccessDenied:
+            raise
+        except httpx.HTTPError as exc:
+            raise AccessDenied("Backend API недоступен") from exc
 
         user_id = UUID(str(me["id"]))
         room_id = UUID(str(room["room_id"]))

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
-from .access_client import AccessClient
+from .auth import Auth
 from .canvas_engine import CanvasEngine
 from .config import settings
 from .controller import BoardController
@@ -13,8 +13,9 @@ from .session_manager import SessionManager
 Base.metadata.create_all(bind=engine)
 
 repository = BoardRepository()
-sessions = SessionManager(AccessClient(settings.BACKEND_API_URL), repository)
-controller = BoardController(sessions, CanvasEngine(), repository)
+engine_canvas = CanvasEngine(repository)
+sessions = SessionManager(Auth(settings.BACKEND_API_URL), engine_canvas)
+controller = BoardController(sessions)
 
 app = FastAPI(
     title="TalkSphere Board",
