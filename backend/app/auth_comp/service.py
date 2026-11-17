@@ -8,9 +8,9 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from .config import settings
-from .database import get_db
-from .models.user import User
+from ..config import settings
+from ..repository.database import get_db
+from ..repository.models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = settings.SECRET_KEY
@@ -75,7 +75,7 @@ async def get_current_user(
 
 
 async def get_current_user_ws(token: str) -> User:
-    from .database import SessionLocal
+    from ..repository.database import SessionLocal
 
     payload = decode_access_token(token)
     user_id = _payload_user_id(payload)

@@ -3,12 +3,12 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
-from ..auth import get_current_user_ws
-from ..database import SessionLocal
-from ..models.participant import ParticipantRole
-from ..models.room import Room, RoomStatus, SCREEN_SHARE_CREATOR_ONLY
-from ..models.scheduled_conference import ConferenceStatus, ScheduledConference
-from ..services.participant_service import ParticipantService
+from ..auth_comp.service import get_current_user_ws
+from ..repository.database import SessionLocal
+from ..repository.models.participant import ParticipantRole
+from ..repository.models.room import Room, RoomStatus, SCREEN_SHARE_CREATOR_ONLY
+from ..repository.models.scheduled_conference import ConferenceStatus, ScheduledConference
+from ..meeting_comp.participants import ParticipantService
 
 signal_router = APIRouter()
 rooms: Dict[str, List[Dict[str, Any]]] = {}
@@ -79,6 +79,7 @@ def serialize_participant(client: Dict[str, Any]) -> Dict[str, Any]:
         "is_video_off": bool(client.get("is_video_off", False)),
         "isScreenSharing": bool(client.get("is_screen_sharing", False)),
         "is_screen_sharing": bool(client.get("is_screen_sharing", False)),
+        "role": client.get("role") or "speaker",
     }
 
 
@@ -150,7 +151,7 @@ async def signal_endpoint(websocket: WebSocket, invite_code: str, token: Optiona
 
     db = SessionLocal()
     try:
-        ParticipantService.add_participant(
+        saved = ParticipantService.add_participant(
             db,
             room_id,
             user.id,
@@ -159,6 +160,7 @@ async def signal_endpoint(websocket: WebSocket, invite_code: str, token: Optiona
             is_video_off=not (camera_on_join and camera_allowed),
             is_screen_sharing=False,
         )
+        current_client["role"] = saved.role.value if saved is not None and saved.role else "speaker"
     finally:
         db.close()
 

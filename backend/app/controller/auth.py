@@ -6,9 +6,9 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from ..auth import create_access_token, get_current_user, get_password_hash, verify_password
-from ..database import get_db
-from ..models.user import User
+from ..auth_comp.service import create_access_token, get_current_user, get_password_hash, verify_password
+from ..repository.database import get_db
+from ..repository.models.user import User
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 

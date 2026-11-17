@@ -9,24 +9,27 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
-from ..auth import get_current_user
-from ..database import get_db
-from ..models.room import (
+from ..auth_comp.service import get_current_user, oauth2_scheme
+from ..repository.database import get_db
+from ..repository.models.room import (
     Room,
     RoomStatus,
     SCREEN_SHARE_EVERYONE,
     VALID_SCREEN_SHARE_POLICIES,
 )
-from ..models.scheduled_conference import ConferenceStatus, ScheduledConference
-from ..models.scheduled_participant import (
+from ..repository.models.scheduled_conference import ConferenceStatus, ScheduledConference
+from ..repository.models.scheduled_participant import (
     INVITATION_ACCEPTED,
     INVITATION_DECLINED,
     INVITATION_PENDING,
     ScheduledParticipant,
 )
-from ..models.user import User
-from ..websocket.chat import chat_rooms
-from ..websocket.signal import rooms as ws_rooms
+from ..repository.models.user import User
+from ..meeting_comp.participants import ParticipantService
+from ..repository.chat_repository import ChatService
+from ..realtime_comp.chat import chat_rooms
+from ..realtime_comp.signal import rooms as ws_rooms
+from ..integration_comp.module import integration
 
 schedule_router = APIRouter(prefix="/schedule", tags=["Schedule"])
 
@@ -326,6 +329,14 @@ async def create_scheduled_conference(
 
     db.commit()
     db.refresh(scheduled)
+    await integration.deliver_invitation(
+        emails=[user.email for user in invited_users if user.email],
+        title=scheduled.title,
+        start=start,
+        end=end,
+        invite_code=room.invite_code,
+        organizer_name=current_user.username,
+    )
     return ScheduleResponse(**_serialize(db, scheduled, current_user.id))
 
 
@@ -608,6 +619,7 @@ async def update_scheduled_conference(
             ScheduledParticipant.scheduled_conference_id == scheduled.id,
         )
     }
+    new_invitees = []
 
     if invited_users is not None:
         target_ids = {str(user.id) for user in invited_users}
@@ -619,6 +631,7 @@ async def update_scheduled_conference(
             if existing:
                 existing.is_read = False
             else:
+                new_invitees.append(user)
                 db.add(
                     ScheduledParticipant(
                         scheduled_conference_id=scheduled.id,
@@ -634,6 +647,15 @@ async def update_scheduled_conference(
 
     db.commit()
     db.refresh(scheduled)
+    if new_invitees and room:
+        await integration.deliver_invitation(
+            emails=[user.email for user in new_invitees if user.email],
+            title=scheduled.title,
+            start=scheduled.scheduled_start,
+            end=scheduled.scheduled_end or scheduled.scheduled_start,
+            invite_code=room.invite_code,
+            organizer_name=current_user.username,
+        )
     return _serialize(db, scheduled, current_user.id)
 
 
@@ -642,6 +664,7 @@ async def cancel_scheduled_conference(
     schedule_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
 ):
     try:
         sched_uuid = uuid.UUID(schedule_id)
@@ -663,9 +686,23 @@ async def cancel_scheduled_conference(
         invitation.is_read = False
 
     room = db.query(Room).filter(Room.id == scheduled.room_id).first() if scheduled.room_id else None
+    history = []
+    people = []
     if room and room.status == RoomStatus.active:
+        history = ChatService.get_messages_with_users(db, room.id)
+        people = ParticipantService.get_participants_with_users(db, room.id)
         room.status = RoomStatus.ended
         room.ended_at = datetime.now(timezone.utc)
         await _close_sockets(room.invite_code, "Запланированная встреча отменена")
     db.commit()
+    if room:
+        await integration.finish_meeting(
+            invite_code=room.invite_code,
+            token=token,
+            title=scheduled.title,
+            participants=[user.username for _participant, user in people],
+            messages=[message.content for message, _user in history],
+            started_at=room.created_at,
+            ended_at=room.ended_at,
+        )
     return {"message": f"Встреча {scheduled.title} отменена", "id": str(scheduled.id)}

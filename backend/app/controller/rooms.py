@@ -3,27 +3,29 @@ import uuid
 import random
 import string
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ..auth import get_current_user
-from ..database import get_db, SessionLocal
-from ..models.participant import RoomParticipant
-from ..models.scheduled_conference import ConferenceStatus, ScheduledConference
-from ..models.room import (
+from ..auth_comp.service import get_current_user, oauth2_scheme
+from ..repository.database import get_db, SessionLocal
+from ..repository.models.participant import ParticipantRole, RoomParticipant
+from ..repository.models.scheduled_conference import ConferenceStatus, ScheduledConference
+from ..repository.models.room import (
     Room,
     RoomStatus,
     SCREEN_SHARE_CREATOR_ONLY,
     SCREEN_SHARE_EVERYONE,
     VALID_SCREEN_SHARE_POLICIES,
 )
-from ..models.user import User
-from ..services.participant_service import ParticipantService
-from ..websocket.chat import chat_rooms
-from ..websocket.signal import rooms as ws_rooms
+from ..repository.models.user import User
+from ..meeting_comp.participants import ParticipantService
+from ..repository.chat_repository import ChatService
+from ..realtime_comp.chat import chat_rooms
+from ..realtime_comp.signal import rooms as ws_rooms
+from ..integration_comp.module import integration
 
 rooms_router = APIRouter(prefix="/rooms", tags=["Rooms"])
 
@@ -57,6 +59,10 @@ class UpdateParticipantStatusRequest(BaseModel):
     is_muted: Optional[bool] = None
     is_video_off: Optional[bool] = None
     is_screen_sharing: Optional[bool] = None
+
+
+class ParticipantRoleRequest(BaseModel):
+    role: Literal["speaker", "moderator", "viewer"]
 
 
 def generate_invite_code() -> str:
@@ -156,6 +162,7 @@ async def delete_room(
     invite_code: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme),
 ):
     invite_code = invite_code.upper()
     room = db.query(Room).filter(Room.invite_code == invite_code).first()
@@ -167,6 +174,9 @@ async def delete_room(
         raise HTTPException(status_code=400, detail="Комната уже завершена")
 
     await _close_room_sockets(invite_code, "Комната завершена создателем")
+    history = ChatService.get_messages_with_users(db, room.id)
+    people = ParticipantService.get_participants_with_users(db, room.id)
+    started_at = room.created_at
     for participant in ParticipantService.get_participants(db, room.id):
         ParticipantService.remove_participant(db, room.id, participant.user_id)
 
@@ -178,6 +188,15 @@ async def delete_room(
     if scheduled and scheduled.status not in {ConferenceStatus.cancelled, ConferenceStatus.ended}:
         scheduled.status = ConferenceStatus.ended
     db.commit()
+    await integration.finish_meeting(
+        invite_code=invite_code,
+        token=token,
+        title=room.title,
+        participants=[user.username for _participant, user in people],
+        messages=[message.content for message, _user in history],
+        started_at=started_at,
+        ended_at=room.ended_at,
+    )
     return {"message": "Комната завершена", "room_id": str(room.id), "status": room.status.value}
 
 
@@ -607,3 +626,72 @@ async def remove_participant(
         "message": f"Участник {target_username} исключён из комнаты",
         "user_id": user_id
     }
+
+
+@rooms_router.patch(
+    "/{invite_code}/participants/{user_id}/role",
+    summary="Назначить роль участника (только для создателя)",
+)
+async def assign_participant_role(
+    invite_code: str,
+    user_id: str,
+    request: ParticipantRoleRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    invite_code = invite_code.upper()
+    room = db.query(Room).filter(Room.invite_code == invite_code).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    if room.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Только создатель может назначать модератора")
+    if room.status != RoomStatus.active:
+        raise HTTPException(status_code=400, detail="Комната не активна")
+    try:
+        target_uuid = uuid.UUID(user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Неверный ID пользователя") from exc
+    if target_uuid == current_user.id:
+        raise HTTPException(status_code=400, detail="Нельзя изменить собственную роль")
+
+    participant = ParticipantService.set_role(
+        db,
+        room.id,
+        target_uuid,
+        ParticipantRole(request.role),
+    )
+    if participant is None:
+        raise HTTPException(status_code=404, detail="Участник не найден в этой комнате")
+    target_user = db.query(User).filter(User.id == target_uuid).first()
+    await _broadcast_participant_role(
+        invite_code,
+        target_uuid,
+        target_user.username if target_user else "Участник",
+        participant.role.value,
+    )
+    return {"user_id": user_id, "role": participant.role.value}
+
+
+async def _broadcast_participant_role(
+    invite_code: str,
+    user_id: uuid.UUID,
+    username: str,
+    role: str,
+):
+    if invite_code not in ws_rooms:
+        return
+
+    payload = {
+        "type": "participant_role",
+        "user_id": str(user_id),
+        "userId": str(user_id),
+        "username": username,
+        "role": role,
+    }
+    for client in ws_rooms[invite_code]:
+        if str(client.get("user_id")) == str(user_id):
+            client["role"] = role
+        try:
+            await client["ws"].send_text(json.dumps(payload))
+        except Exception:
+            pass

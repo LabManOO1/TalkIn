@@ -3,8 +3,8 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from ..models.participant import ParticipantRole, RoomParticipant
-from ..models.user import User
+from ..repository.models.participant import ParticipantRole, RoomParticipant
+from ..repository.models.user import User
 
 
 class ParticipantService:
@@ -42,6 +42,20 @@ class ParticipantService:
             is_screen_sharing=is_screen_sharing,
         )
         db.add(participant)
+        db.commit()
+        db.refresh(participant)
+        return participant
+
+    @staticmethod
+    def set_role(db: Session, room_id: uuid.UUID, user_id: uuid.UUID, role: ParticipantRole):
+        participant = db.query(RoomParticipant).filter(
+            RoomParticipant.room_id == room_id,
+            RoomParticipant.user_id == user_id,
+            RoomParticipant.left_at.is_(None),
+        ).first()
+        if participant is None:
+            return None
+        participant.role = role
         db.commit()
         db.refresh(participant)
         return participant

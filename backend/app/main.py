@@ -2,11 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers.auth import auth_router
-from .routers.rooms import rooms_router
-from .routers.schedule import schedule_router
-from .websocket.chat import chat_router
-from .websocket.signal import signal_router
+from .controller.auth import auth_router
+from .integration_comp.stub_router import stubs_router
+from .controller.rooms import rooms_router
+from .controller.schedule import schedule_router
+from .realtime_comp.chat import chat_router
+from .realtime_comp.signal import signal_router
 
 app = FastAPI(
     title="TalkSphere API",
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(stubs_router)
 app.include_router(rooms_router)
 app.include_router(schedule_router)
 app.include_router(chat_router)

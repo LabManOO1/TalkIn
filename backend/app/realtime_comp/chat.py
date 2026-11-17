@@ -4,10 +4,10 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
-from ..auth import get_current_user_ws
-from ..database import SessionLocal
-from ..models.room import Room, RoomStatus
-from ..services.chat_service import ChatService
+from ..auth_comp.service import get_current_user_ws
+from ..repository.database import SessionLocal
+from ..repository.models.room import Room, RoomStatus
+from ..repository.chat_repository import ChatService
 
 chat_router = APIRouter()
 chat_rooms: Dict[str, List[Dict[str, Any]]] = {}
