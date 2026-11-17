@@ -1,0 +1,39 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Локальный сегмент развертывания: Backend API
+
+Deployment_Node(cloud, "Yandex Cloud VPC", "ЦОД") {
+    Deployment_Node(edge, "Шлюз периметра", "Ubuntu VM") {
+        Container(nginx, "Reverse Proxy", "Nginx :443", "TLS, балансировка.")
+        Container(mosquitto, "IoT Broker", "Mosquitto :8883", "MQTTS устройств комнаты.")
+    }
+    Deployment_Node(apps, "Docker Host", "Ubuntu") {
+        Container(api, "Backend API", "Docker, FastAPI :8000", "create_meeting, signaling.")
+        Container(filesvc, "Файловый сервис", "Docker :8002", "close_folder.")
+    }
+    Deployment_Node(dbm, "БД Master", "Managed PostgreSQL") {
+        ContainerDb(db_master, "PostgreSQL Master", ":5432", "Запись.")
+    }
+    Deployment_Node(dbr, "БД Replica", "Managed PostgreSQL") {
+        ContainerDb(db_replica, "PostgreSQL Replica", ":5432", "Чтение.")
+    }
+}
+
+System_Ext(iam, "IAM", "OAuth2 :443")
+System_Ext(crm, "CRM", "gRPC :443")
+System_Ext(payment, "Финансовая система", "HTTPS :443")
+
+Rel(nginx, api, "Прокси /api и /ws", "HTTP/WS, порт 8000")
+Rel(mosquitto, api, "Телеметрия устройств", "MQTT/TCP")
+Rel(api, db_master, "Запись комнат и чата", "SQL/TCP TLS, порт 5432")
+Rel(api, db_replica, "Чтение календаря", "SQL/TCP TLS, порт 5432")
+Rel(db_master, db_replica, "Репликация Master-Replica", "TCP 5432")
+Rel(api, iam, "introspect", "HTTPS / OAuth2, 443")
+Rel(api, crm, "sync_meeting", "gRPC TLS, 443")
+Rel(api, payment, "create_payment_intent", "HTTPS, 443")
+Rel(api, filesvc, "close_folder", "HTTP, 8002")
+@enduml
