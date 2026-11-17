@@ -1,0 +1,77 @@
+name: Auto Render C4 Architecture Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Setup Java Environment
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Graphviz Engine
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Download PlantUML Jar Executable
+        run: |
+          wget https://github.com/plantuml/plantuml/releases/download/v1.2024.8/plantuml-1.2024.8.jar -O plantuml.jar
+
+      - name: Validate PlantUML syntax
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(find src -name '*.puml' -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "❌ В каталоге src нет файлов .puml"
+            exit 1
+          fi
+          failed=0
+          for file in "${files[@]}"; do
+            if grep -nE 'Rel_[RLUD]\(' "$file"; then
+              echo "❌ $file: запрещены Rel_R, Rel_L, Rel_U и Rel_D. Нужен макрос Rel()."
+              failed=1
+              continue
+            fi
+            echo "[INFO] Checking PlantUML syntax for $file..."
+            if ! java -Dfile.encoding=UTF-8 -jar plantuml.jar -charset UTF-8 -checkonly "$file"; then
+              echo "❌ Синтаксическая ошибка PlantUML: $file"
+              failed=1
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "Pipeline failed. Status: CRITICAL FAILURE ❌"
+            exit 1
+          fi
+          echo "Parsed ${#files[@]} files successfully. No structural or syntax errors detected."
+
+      - name: Compile Diagrams to PNG
+        run: |
+          set -euo pipefail
+          mkdir -p docs/images
+          mapfile -d '' files < <(find src -name '*.puml' -print0)
+          for file in "${files[@]}"; do
+            java -Dfile.encoding=UTF-8 -jar plantuml.jar -charset UTF-8 -verbose -tpng -o "${GITHUB_WORKSPACE}/docs/images" "$file"
+          done
+
+      - name: Commit and Push Rendered Artifacts
+        if: github.event_name == 'push'
+        run: |
+          git config --global user.name 'PUML Checker'
+          git config --global user.email 'devops@stankin.ru'
+          git add docs/images/*.png
+          git commit -m 'docs: auto-update architecture diagrams [skip ci]' || echo 'No changes to commit'
+          git push
