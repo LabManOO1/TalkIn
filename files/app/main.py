@@ -4,8 +4,8 @@ from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
-from .access_client import AccessClient, AccessDenied
 from .access_guard import AccessGuard
+from .auth import AccessDenied, Auth
 from .config import settings
 from .controller import FilesController
 from .folder_manager import FolderClosed, FolderManager
@@ -21,7 +21,7 @@ folders = FolderManager(
     settings.MAX_FILE_BYTES,
     settings.MAX_FOLDER_BYTES,
 )
-controller = FilesController(AccessGuard(AccessClient(settings.BACKEND_API_URL), folders), folders)
+controller = FilesController(AccessGuard(Auth(settings.BACKEND_API_URL), folders))
 
 app = FastAPI(
     title="TalkSphere Files",
