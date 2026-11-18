@@ -1,0 +1,36 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Диаграмма системного ландшафта TalkSphere (Level 0)
+
+Person(organizer, "Организатор встречи", "Создаёт корпоративную встречу и приглашает сотрудников.")
+Person(participant, "Участник встречи", "Входит через корпоративный SSO и подключается к конференции.")
+
+Enterprise_Boundary(corp, "Корпоративная ИТ-инфраструктура организации") {
+    System(talksphere, "TalkSphere", "Платформа видеовстреч: комнаты, чат, доска, файлы и отчёт.")
+    System(iam, "Корпоративный IAM", "Keycloak. Единый вход сотрудников, выдача и проверка токенов.")
+    System(crm, "Корпоративная CRM", "Карточки клиентов и сотрудников, история встреч и статусы сделок.")
+}
+
+System_Boundary(ext, "Внешние сервисы") {
+    System_Ext(payment, "Внешняя финансовая система", "Эквайринг организации. Подтверждение оплаты бронирования переговорной.")
+    System_Ext(mail, "Почтовый сервис", "Доставка писем-приглашений.")
+    System_Ext(calendar, "Google Календарь", "События встреч сотрудника.")
+    System_Ext(ai, "Сервис ИИ", "Текст отчёта по итогам встречи.")
+}
+
+Rel(organizer, talksphere, "Параметры встречи, список приглашённых, завершение комнаты", "HTTPS")
+Rel(participant, talksphere, "Вход в конференцию, чат, доска и файлы", "HTTPS, WSS")
+Rel(talksphere, iam, "Проверка SSO-сессии сотрудника", "HTTPS / OAuth2")
+Rel(iam, talksphere, "Access token и профиль сотрудника", "HTTPS / OAuth2")
+Rel(talksphere, crm, "Карточка встречи, участники и итог звонка", "gRPC")
+Rel(crm, talksphere, "Список контактов для приглашения", "gRPC")
+Rel(talksphere, payment, "create_payment_intent, статус оплаты бронирования", "HTTPS / JSON")
+Rel(talksphere, mail, "Письмо-приглашение на встречу", "SMTP/TLS")
+Rel(talksphere, calendar, "Название, время и ссылка встречи", "HTTPS/JSON")
+Rel(talksphere, ai, "Итоги встречи: чат, участники, длительность", "HTTPS/JSON")
+Rel(ai, talksphere, "Текст отчёта по встрече", "HTTPS/JSON")
+@enduml
