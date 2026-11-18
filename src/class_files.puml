@@ -1,0 +1,80 @@
+@startuml
+skinparam defaultFontName Arial
+skinparam dpi 130
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide circle
+
+title Диаграмма классов контейнера Файловый сервис (TalkSphere)
+
+package "files_controller" {
+  class FilesController {
+    +upload(invite_code: str, token: str, file: UploadFile): FileMeta
+    +download(invite_code: str, file_id: UUID, token: str): tuple
+    +list_files(invite_code: str, token: str): list
+    +close_folder(invite_code: str, token: str): void
+  }
+  class FileMeta {
+    +id: UUID
+    +name: str
+    +size: int
+    +meeting_id: UUID
+  }
+}
+
+package "access_guard" {
+  class AccessGuard {
+    +assert_open(invite_code: str, token: str): MeetingFolder
+    +assert_creator(invite_code: str, token: str): MeetingFolder
+  }
+  class AccessClient {
+    +verify(token: str, invite_code: str): tuple
+  }
+}
+
+package "folder_manager" {
+  class FolderManager {
+    -storage: StoragePort
+    +ensure_folder(meeting_id: UUID, invite_code: str): MeetingFolder
+    +close_folder(meeting_id: UUID): void
+    +put_file(folder: MeetingFolder, name: str, data: bytes): FileMeta
+    +get_file(folder: MeetingFolder, file_id: UUID): bytes
+  }
+  class MeetingFolder {
+    +meeting_id: UUID
+    +status: FolderStatus
+    +path: str
+    +invite_code: str
+  }
+  class FolderRepository {
+    +get_folder(meeting_id: UUID): MeetingFolder
+    +save_folder(folder: MeetingFolder): MeetingFolder
+    +add_file(meta: FileMeta, stored_name: str): FileMeta
+  }
+  enum FolderStatus {
+    open
+    closed
+  }
+}
+
+package "disk_storage" {
+  interface StoragePort <<Strategy>> {
+    +mkdir(path: str): void
+    +write(path: str, data: bytes): None
+    +read(path: str): bytes
+  }
+  class DiskStorageAdapter
+}
+
+FilesController --> AccessGuard
+FilesController --> FolderManager
+AccessGuard --> AccessClient : HTTPS/JSON
+AccessGuard --> FolderManager : статус папки
+FolderManager --> FolderRepository
+FolderManager --> MeetingFolder
+MeetingFolder --> FolderStatus
+FolderManager --> StoragePort
+StoragePort <|.. DiskStorageAdapter
+FolderManager ..> FileMeta
+FilesController ..> FileMeta
+@enduml

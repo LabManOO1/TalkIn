@@ -4,28 +4,21 @@ from fastapi import UploadFile
 
 from .access_guard import AccessGuard
 from .domain import FileMeta
-from .folder_manager import FolderManager
 
 
 class FilesController:
-    def __init__(self, guard: AccessGuard, folders: FolderManager) -> None:
+    def __init__(self, guard: AccessGuard) -> None:
         self.guard = guard
-        self.folders = folders
 
     async def upload(self, invite_code: str, token: str, file: UploadFile) -> FileMeta:
-        folder = await self.guard.assert_open(invite_code, token)
         data = await file.read()
-        return self.folders.put_file(folder, file.filename or "file", data)
+        return await self.guard.upload(invite_code, token, file.filename or "file", data)
 
     async def download(self, invite_code: str, file_id: UUID, token: str) -> tuple[FileMeta, bytes]:
-        folder = await self.guard.assert_open(invite_code, token)
-        meta = self.folders.get_meta(folder, file_id)
-        return meta, self.folders.get_file(folder, file_id)
+        return await self.guard.download(invite_code, file_id, token)
 
     async def list_files(self, invite_code: str, token: str) -> list[FileMeta]:
-        folder = await self.guard.assert_open(invite_code, token)
-        return self.folders.list_files(folder)
+        return await self.guard.list_files(invite_code, token)
 
     async def close_folder(self, invite_code: str, token: str) -> None:
-        folder = await self.guard.assert_creator(invite_code, token)
-        self.folders.close_folder(folder.meeting_id)
+        await self.guard.close_folder(invite_code, token)
