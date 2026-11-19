@@ -1,0 +1,42 @@
+@startuml
+!pragma layout smetana
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+skinparam defaultFontName Arial
+skinparam dpi 140
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+
+title Диаграмма системного контекста программной системы TalkSphere
+
+Person(participant, "Участник встречи", "Принимает приглашение, подключается к звонку и пишет в чат.")
+Person(organizer, "Организатор встречи", "Создаёт встречу, приглашает людей и задаёт правила устройств.")
+Person(moderator, "Модератор", "Участник, которому организатор выдаёт особые права.")
+
+System(talksphere, "TalkSphere", "Платформа видеовстреч: создание, приглашения, календарь, чат, общая доска и WebRTC-звонок.")
+
+System_Ext(mail, "Почтовый сервис", "Внешняя доставка писем-приглашений.")
+System_Ext(calendar, "Google Календарь", "Календарь пользователя. События встреч TalkSphere.")
+System_Ext(ai, "Сервис ИИ", "Внешний сервис. Формирует отчёт по итогам встречи.")
+
+Rel(participant, talksphere, "Ответ на приглашение, сообщения чата, запрос подключения", "HTTPS, WSS")
+Rel(talksphere, participant, "Календарь, история чата, медиапотоки и отчёт встречи", "HTTPS, WebRTC")
+Rel(organizer, talksphere, "Параметры встречи, список приглашённых, назначение модератора, команды управления устройствами", "HTTPS")
+Rel(talksphere, organizer, "Статусы приглашений, состав участников и отчёт встречи", "HTTPS/JSON")
+Rel(moderator, talksphere, "Команды в рамках выданных прав", "HTTPS")
+Rel(talksphere, moderator, "Состав участников и статус комнаты", "HTTPS/JSON")
+
+Rel(talksphere, mail, "Письмо-приглашение на встречу", "SMTP/TLS")
+Rel(talksphere, calendar, "Название, время и ссылка встречи", "HTTPS/JSON")
+Rel(talksphere, ai, "Итоги встречи: чат, участники, длительность", "HTTPS/JSON")
+Rel(ai, talksphere, "Текст отчёта по встрече", "HTTPS/JSON")
+
+Lay_R(participant, organizer)
+Lay_R(organizer, moderator)
+Lay_D(participant, talksphere)
+Lay_D(organizer, talksphere)
+Lay_D(moderator, talksphere)
+Lay_D(talksphere, mail)
+Lay_R(mail, calendar)
+Lay_R(calendar, ai)
+@enduml
